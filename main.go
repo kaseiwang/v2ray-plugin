@@ -40,27 +40,29 @@ import (
 )
 
 var (
-	VERSION    = "custom"
+	VERSION = "custom"
 )
 
 var (
-	vpn        = flag.Bool("V", false, "Run in VPN mode.")
-	fastOpen   = flag.Bool("fast-open", false, "Enable TCP fast open.")
-	localAddr  = flag.String("localAddr", "127.0.0.1", "local address to listen on.")
-	localPort  = flag.String("localPort", "1984", "local port to listen on.")
-	remoteAddr = flag.String("remoteAddr", "127.0.0.1", "remote address to forward.")
-	remotePort = flag.String("remotePort", "1080", "remote port to forward.")
-	path       = flag.String("path", "/", "URL path for websocket.")
-	host       = flag.String("host", "cloudfront.com", "Hostname for server.")
-	tlsEnabled = flag.Bool("tls", false, "Enable TLS.")
-	cert       = flag.String("cert", "", "Path to TLS certificate file. Overrides certRaw. Default: ~/.acme.sh/{host}/fullchain.cer")
-	certRaw    = flag.String("certRaw", "", "Raw TLS certificate content. Intended only for Android.")
-	key        = flag.String("key", "", "(server) Path to TLS key file. Default: ~/.acme.sh/{host}/{host}.key")
-	mode       = flag.String("mode", "websocket", "Transport mode: websocket, quic (enforced tls).")
-	mux        = flag.Int("mux", 1, "Concurrent multiplexed connections (websocket client mode only).")
-	server     = flag.Bool("server", false, "Run in server mode")
-	logLevel   = flag.String("loglevel", "", "loglevel for v2ray: debug, info, warning (default), error, none.")
-	version    = flag.Bool("version", false, "Show current version of v2ray-plugin")
+	vpn               = flag.Bool("V", false, "Run in VPN mode.")
+	fastOpen          = flag.Bool("fast-open", false, "Enable TCP fast open.")
+	localAddr         = flag.String("localAddr", "127.0.0.1", "local address to listen on.")
+	localPort         = flag.String("localPort", "1984", "local port to listen on.")
+	remoteAddr        = flag.String("remoteAddr", "127.0.0.1", "remote address to forward.")
+	remotePort        = flag.String("remotePort", "1080", "remote port to forward.")
+	path              = flag.String("path", "/", "URL path for websocket.")
+	host              = flag.String("host", "cloudfront.com", "Hostname for server.")
+	tlsEnabled        = flag.Bool("tls", false, "Enable TLS.")
+	cert              = flag.String("cert", "", "Path to TLS certificate file. Overrides certRaw. Default: ~/.acme.sh/{host}/fullchain.cer")
+	certRaw           = flag.String("certRaw", "", "Raw TLS certificate content. Intended only for Android.")
+	key               = flag.String("key", "", "(server) Path to TLS key file. Default: ~/.acme.sh/{host}/{host}.key")
+	mode              = flag.String("mode", "websocket", "Transport mode: websocket, quic (enforced tls).")
+	mux               = flag.Int("mux", 1, "Concurrent multiplexed connections (websocket client mode only).")
+	heartbeatinterval = flag.Int64("heartbeatinterval", 0, "heartbeatinterval")
+	heartbeattimeout  = flag.Int64("heartbeattimeout", 0, "heartbeattimeout")
+	server            = flag.Bool("server", false, "Run in server mode")
+	logLevel          = flag.String("loglevel", "", "loglevel for v2ray: debug, info, warning (default), error, none.")
+	version           = flag.Bool("version", false, "Show current version of v2ray-plugin")
 )
 
 func homeDir() string {
@@ -134,6 +136,8 @@ func generateConfig() (*core.Config, error) {
 			Header: []*websocket.Header{
 				{Key: "Host", Value: *host},
 			},
+			HeartBeatInterval: *heartbeatinterval,
+			HeartBeatTimeout:  *heartbeattimeout,
 		}
 		connectionReuse = true
 	case "quic":
@@ -206,7 +210,7 @@ func generateConfig() (*core.Config, error) {
 		inbounds := make([]*core.InboundHandlerConfig, len(localAddrs))
 
 		for i := 0; i < len(localAddrs); i++ {
-				inbounds[i] = &core.InboundHandlerConfig{
+			inbounds[i] = &core.InboundHandlerConfig{
 				ReceiverSettings: serial.ToTypedMessage(&proxyman.ReceiverConfig{
 					PortRange:      net.SinglePortRange(lport),
 					Listen:         net.NewIPOrDomain(net.ParseAddress(localAddrs[i])),
@@ -343,17 +347,17 @@ func printCoreVersion() {
 }
 
 func printVersion() {
-    fmt.Println("v2ray-plugin", VERSION);
-    fmt.Println("Yet another SIP003 plugin for shadowsocks");
+	fmt.Println("v2ray-plugin", VERSION)
+	fmt.Println("Yet another SIP003 plugin for shadowsocks")
 }
 
 func main() {
 	flag.Parse()
 
-    if *version {
-        printVersion()
-        return
-    }
+	if *version {
+		printVersion()
+		return
+	}
 
 	logInit()
 
